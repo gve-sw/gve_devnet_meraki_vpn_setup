@@ -1,0 +1,161 @@
+<!-- Template page: offers three sections to visualize a 3 steps workflow.-->
+
+    {% extends "masterPage.html" %}
+
+    {% block content %}
+    <div class="row">
+            
+            <!-- Left Rail -->
+            <div class="col-xl-3 col-md-4">
+                <div class="section" >
+                    <div class="panel panel--loose panel--raised base-margin-bottom">
+                        <h2 class="subtitle">Step 1: Define network settings</h2><hr>
+                            <div class="section"> 
+                                <form action="/" method="POST" name="envVars"> 
+
+                                <!--CUSTOMIZE: Change content, if no network selection or further fields are required -->
+                                <!--PASS INFO: dropdown_content = json string that includes all organization and networks of a user (format: see dropdown_content variable in app.py - columnpage())-->
+                                    <!--Orga fields-->
+                                    <div class="form-group base-margin-bottom">
+                                        <div class="form-group__text select">
+                                            <select name="organizations_select" id='organizations_select' required>
+                                                <option disabled selected hidden value="0">Please choose...</option>
+                                                {% for orga in dropdown_content %}<option value="{{orga.orgaid}}" {% if selected_elements.organization == orga.orgaid %} selected {% endif %}>{{orga.organame}} (ID:{{orga.orgaid}})</option>{% endfor %}
+                                            </select>
+                                            <label for="organizations_select">Organization*</label>
+                                        </div>
+                                    </div>
+
+                                    <!--Network fields-->
+                                {% for orga in dropdown_content %}
+                                    <div id="{{orga.orgaid}}" class="network-select" {% if selected_elements.organization != orga.orgaid %} hidden {% endif %}>
+                                        <div class="form-group base-margin-bottom">
+                                            <div class="form-group__text select">
+                                                <select name="network" class='networks'>
+                                                    <option disabled selected hidden value="0">Please choose...</option>
+                                                    {% for network in orga['networks'] %}
+                                                        <option value="{{network['networkid']}}" {% if selected_elements.network_id == network['networkid'] %} selected {% endif %}>{{network['networkname']}} (ID:{{network['networkid']}})</option>                                                      
+                                                    {% endfor %}
+                                                </select>
+                                                <label for="network">Network*</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                <!-- CUSTOMIZATION END -->
+                            
+                                <div style="text-align: left;margin-top: 30px;">
+                                    <input id="upload" value="" type="file" hidden/>
+                                    <span onclick="importButton();" data-balloon="Upload network settings Excel file" data-balloon-pos="up"><button class="btn btn--primary" href="#" id="upload_link">Upload settings file</button></span>
+                                </div>
+                                <div id="upload-check" hidden style="margin-top: 10px;">
+                                    File was uploaded <span hidden="hidden" class="icon-check" ></span>
+                                </div>
+
+                            <span class="required-label pull-right">* required fields</span>
+                            </div> 
+
+                            <div height="100px">
+                                <button style="float:right" onclick="this.innerHTML='Loading...'" style="color: white;margin-bottom: 40px;" class="btn btn--dark" type="submit">Submit</button>
+                            </div>
+
+                            <div style="height: 40px;"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        
+    
+            <!-- Middle Rail -->
+            <div class="col-xl-6 col-md-4">
+                <div class="section" >
+                    <div class="panel panel--loose panel--raised base-margin-bottom">
+                        <h2 class="subtitle">Step 2: Confirm Settings</h2><hr>
+                        
+                        <!--CUSTOMIZE: Change content as needed-->
+                        <div class="section">
+                            <form action="/configure" method="POST" name="envVars"> 
+                            <div class="responsive-table">
+                                <table class="table table--lined table">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Network name</th>
+                                            <th>VLAN 51</th>
+                                            <th>VLAN 52</th>
+                                            <th>Public IP Address</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for n in networks %}
+                                        <tr>
+                                            <td>
+                                                <label class="checkbox">
+                                                    <input name="checkbox" value="{{n.index}}" type="checkbox">
+                                                    <span class="checkbox__input"></span>
+                                                </label>
+                                            </td>
+                                            <td>{{n.name}}</td>
+                                            <td><div class="form-group form-group--inline">
+                                                <div class="form-group__text">
+                                                    <input type="text" name="vlan51prefix">
+                                                    <label>{{n.vlan51}}/</label>
+                                                </div>
+                                            </div></td>
+                                            <td><div class="form-group form-group--inline">
+                                                <div class="form-group__text">
+                                                    <input type="text" name="vlan52prefix">
+                                                    <label>{{n.vlan52}}/</label>
+                                                </div>
+                                            </div></td>
+                                            <td>{{n.public}}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div height="100px">
+                                <button style="float:right;margin-top: 20px;" onclick="this.innerHTML='Loading...'" style="color: white;margin-bottom: 40px;" class="btn btn--dark" type="submit">Confirm</button>
+                            </div>
+
+                            <div style="height: 40px;"></div>
+                            </form>
+                        </div>
+                        <!-- CUSTOMIZATION END -->                                                                       
+                                
+                    </div>
+                </div>
+            </div>
+    
+        <!-- Right Rail -->
+        <div class="col-xl-3 col-md-4">
+            <div class="section" >
+                <div class="panel panel--loose panel--raised base-margin-bottom">
+                    <h2 class="subtitle">Step 3: Review configuration</h2><hr>
+                    
+                    <!--CUSTOMIZE: Change content as needed-->
+                    <form action="/" method="POST" name="envVars"> 
+                        <div class="section"> 
+                            {% for s in success %}
+                            <div class="alert alert--success">
+                                <div class="alert__icon icon-check-outline"></div>
+                                <div class="alert__message">{{s}}</div>
+                            </div>
+                            {% endfor %}
+                            {% if error|length>0 %}
+                            <div class="alert alert--danger" role="alert">
+                                <div class="alert__icon icon-error-outline"></div>
+                                <div class="alert__message">{{error}}</div>
+                            </div>
+                            {% endif %}
+                            <a class="btn btn--primary" href="{{ url }}" target="_blank">Go to network in Meraki dashboard</a>
+                        </div> 
+                    </form>
+                    <!-- CUSTOMIZATION END-->
+
+                   
+                </div>
+            </div>
+        </div>
+    </div>
+    {%  endblock %}
